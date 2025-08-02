@@ -15,15 +15,17 @@ const config = {
     secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   }),
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    async session({ session, token }) {
+      // 使用 JWT 策略时，从 token 获取用户 ID
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
       }
       return session;
     },
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
+      // 首次登录时保存用户 ID
+      if (user?.id) {
+        token.sub = user.id;
       }
       return token;
     },

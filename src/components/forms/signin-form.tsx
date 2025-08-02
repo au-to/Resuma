@@ -35,6 +35,7 @@ export function SignInForm() {
       const result = await signIn('nodemailer', {
         email: data.email,
         redirect: false,
+        callbackUrl: '/dashboard',
       });
 
       if (result?.ok) {
