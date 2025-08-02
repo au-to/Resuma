@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import { SupabaseAdapter } from '@auth/supabase-adapter';
-import EmailProvider from 'next-auth/providers/email';
+import EmailProvider from 'next-auth/providers/nodemailer';
 import type { NextAuthConfig } from 'next-auth';
 
 const config = {

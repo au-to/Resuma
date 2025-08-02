@@ -32,7 +32,7 @@ export function SignInForm() {
   const onSubmit = async (data: SignInFormData) => {
     setIsLoading(true);
     try {
-      const result = await signIn('email', {
+      const result = await signIn('nodemailer', {
         email: data.email,
         redirect: false,
       });
