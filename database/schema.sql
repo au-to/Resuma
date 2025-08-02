@@ -1,8 +1,30 @@
 -- 启用必要的扩展
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 用户表（由 NextAuth 自动创建，这里仅做参考）
--- 实际表结构由 @auth/supabase-adapter 管理
+-- 模板表（必须最先创建，供其他表引用）
+CREATE TABLE IF NOT EXISTS templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  thumbnail TEXT,
+  is_premium BOOLEAN DEFAULT FALSE,
+  styles JSONB NOT NULL DEFAULT '{
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    },
+    "colors": {
+      "primary": "#3b82f6",
+      "secondary": "#64748b",
+      "text": "#1f2937",
+      "background": "#ffffff"
+    },
+    "layout": "single-column",
+    "spacing": "normal"
+  }',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
 -- 简历表
 CREATE TABLE IF NOT EXISTS resumes (
@@ -29,31 +51,6 @@ CREATE TABLE IF NOT EXISTS resumes (
   }',
   template_id UUID REFERENCES templates(id),
   is_public BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 模板表
-CREATE TABLE IF NOT EXISTS templates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  thumbnail TEXT,
-  is_premium BOOLEAN DEFAULT FALSE,
-  styles JSONB NOT NULL DEFAULT '{
-    "fonts": {
-      "heading": "Inter",
-      "body": "Inter"
-    },
-    "colors": {
-      "primary": "#3b82f6",
-      "secondary": "#64748b",
-      "text": "#1f2937",
-      "background": "#ffffff"
-    },
-    "layout": "single-column",
-    "spacing": "normal"
-  }',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -86,7 +83,7 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE 'plpgsql';
 
 CREATE TRIGGER update_resumes_updated_at 
   BEFORE UPDATE ON resumes 
@@ -100,9 +97,10 @@ CREATE TRIGGER update_user_settings_updated_at
   BEFORE UPDATE ON user_settings 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- RLS (行级安全) 策略
+-- 启用 Row-Level Security（RLS）
 ALTER TABLE resumes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
 
 -- 简历访问策略
 CREATE POLICY "用户只能查看自己的简历" ON resumes
@@ -127,7 +125,7 @@ CREATE POLICY "用户只能创建自己的设置" ON user_settings
 CREATE POLICY "用户只能更新自己的设置" ON user_settings
   FOR UPDATE USING (auth.uid() = user_id);
 
--- 模板对所有人可见
+-- 模板对所有登录用户可读
 CREATE POLICY "所有人都可以查看模板" ON templates
   FOR SELECT TO authenticated USING (true);
 
